@@ -1,0 +1,40 @@
+# 生成AIパスポート 問題練習
+
+生成AIパスポートの試験対策向けに、4択問題を解いて正誤と解説を確認できる Web アプリです。
+
+## 開発
+
+```bash
+npm install
+npm run dev
+```
+
+## 問題データの更新
+
+問題は [`public/data/questions.json`](public/data/questions.json) に置きます。UI は `QuestionRepository` 経由で読み込むため、データだけ差し替えれば反映されます。
+
+想定スキーマ（1オブジェクト = 1問）:
+
+| フィールド | 内容 |
+|------------|------|
+| `id` | 安定した識別子 |
+| `category` | 分野 |
+| `question` | 問題文 |
+| `choices` | 選択肢配列 |
+| `answer` | 正解のインデックス（0始まり） |
+| `explanation` | 解説 |
+
+将来のスプレッドシート同期用スタブ:
+
+```bash
+npm run sync:questions
+```
+
+## ビルド
+
+```bash
+npm run build
+npm run preview
+```
+
+GitHub / GitHub Pages への公開は、依頼時に設定します。
