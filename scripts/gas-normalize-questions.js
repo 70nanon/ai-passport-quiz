@@ -7,8 +7,9 @@
  * 3. normalizeAllInFolder を実行（初回は Drive / Spreadsheet の承認が必要）
  *
  * 入力レイアウト（実 CSV より）:
- *   先頭行: A=番号, B=問題文, C=①選択肢, E=正解①〜④, F=正解1〜4
+ *   先頭行: A=番号（半角/全角可）, B=問題文, C=①選択肢, E=正解①〜④, F=正解1〜4
  *   続き行: C=②③④選択肢
+ *   ※問題番号・正解の全角数字（１など）にも対応
  *
  * 出力:
  *   フォルダ内に CSV を新規作成／同名があれば更新
@@ -352,8 +353,19 @@ function cell_(row, index) {
   return String(v).trim();
 }
 
+/** 全角数字・全角スペースなどを半角寄りに正規化 */
+function toHalfWidthDigits_(s) {
+  return String(s)
+    .replace(/[０-９]/g, function (ch) {
+      return String.fromCharCode(ch.charCodeAt(0) - 0xfee0);
+    })
+    .replace(/\u3000/g, ' ')
+    .trim();
+}
+
 function isQuestionNumber_(a) {
-  return /^\d+$/.test(String(a).trim());
+  // 半角・全角のどちらでも「数字だけ」なら問題先頭行とみなす
+  return /^\d+$/.test(toHalfWidthDigits_(a));
 }
 
 function looksLikeChoice_(s) {
@@ -367,20 +379,22 @@ function stripChoiceMark_(s) {
 }
 
 function toAnswerIndex_(value) {
-  const s = String(value).trim();
-  if (s === '') throw new Error('正解が空');
+  const raw = String(value).trim();
+  if (raw === '') throw new Error('正解が空');
 
   const map = { '①': 0, '②': 1, '③': 2, '④': 3 };
-  if (map[s] !== undefined) return map[s];
+  if (map[raw] !== undefined) return map[raw];
 
-  const m = s.match(/[①②③④]/);
+  const m = raw.match(/[①②③④]/);
   if (m) return map[m[0]];
 
+  // 全角数字（１〜４）や半角を統一してから数値化
+  const s = toHalfWidthDigits_(raw);
   const n = Number(s);
   if (n >= 1 && n <= 4) return n - 1;
   if (n >= 0 && n <= 3 && String(n) === s) return n;
 
-  throw new Error('未対応の正解形式: ' + s);
+  throw new Error('未対応の正解形式: ' + raw);
 }
 
 function pad3_(n) {
