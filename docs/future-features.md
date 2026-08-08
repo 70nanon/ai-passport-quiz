@@ -24,6 +24,7 @@
 
 - **前提**: 特になし（`base: './'` は設定済み）
 - **メモ**: リポジトリは作成済み（`70nanon/ai-passport-quiz`）
+- [x] 完了（PR: https://github.com/70nanon/ai-passport-quiz/pull/1）
 
 ### 本番の問題データを投入する
 
