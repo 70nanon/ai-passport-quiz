@@ -44,7 +44,7 @@
 
 - **前提**: シートの列定義が固まっていること、取得手段（公開 CSV URL など）が決まっていること
 - **関連**: [`scripts/sync-questions.mjs`](../scripts/sync-questions.mjs)
-- [x] 完了（PR 作成後にリンクを記入）
+- [x] 完了（PR: https://github.com/70nanon/ai-passport-quiz/pull/2）
 
 ### ビルド／CI で同期してからデプロイする
 
