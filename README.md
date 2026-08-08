@@ -24,11 +24,18 @@ npm run dev
 | `answer` | 正解のインデックス（0始まり） |
 | `explanation` | 解説 |
 
-将来のスプレッドシート同期用スタブ:
+正規化済み CSV から JSON を生成:
 
 ```bash
-npm run sync:questions
+# 公開 CSV URL
+SHEETS_CSV_URL="https://.../export?format=csv&gid=..." npm run sync:questions
+
+# またはリポジトリ内のサンプル CSV
+SHEETS_CSV_URL="./public/data/sample-questions-normalized.csv" npm run sync:questions
 ```
+
+CSV の列は `id, category, question, choiceA, choiceB, choiceC, choiceD, answer, explanation` を想定しています（GAS の出力と同じ）。  
+サンプルとして [`public/data/sample-questions-normalized.csv`](public/data/sample-questions-normalized.csv) と、同期結果の [`public/data/questions.json`](public/data/questions.json) を置いてあります。
 
 ## ビルド
 
