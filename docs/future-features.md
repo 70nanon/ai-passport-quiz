@@ -33,6 +33,7 @@
 - **前提**: シート列をアプリのスキーマに対応させる  
   （`id` / `category` / `question` / 選択肢 / `answer` / `explanation`）
 - **メモ**: UI 変更なしでデータ差し替えだけでよい
+- [x] 完了（PR: https://github.com/70nanon/ai-passport-quiz/pull/2）
 
 ---
 

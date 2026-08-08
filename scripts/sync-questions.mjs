@@ -8,7 +8,7 @@
  *
  * 使い方:
  *   SHEETS_CSV_URL="https://.../export?format=csv&gid=..." npm run sync:questions
- *   SHEETS_CSV_URL="./public/data/questions-normalized.csv" npm run sync:questions
+ *   SHEETS_CSV_URL="./public/data/sample-questions-normalized.csv" npm run sync:questions
  */
 
 import { readFile, writeFile } from 'node:fs/promises'
