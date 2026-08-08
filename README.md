@@ -37,4 +37,8 @@ npm run build
 npm run preview
 ```
 
-GitHub / GitHub Pages への公開は、依頼時に設定します。
+GitHub Pages などの公開設定は、必要になったタイミングで行います。
+
+## 今後のアップデート案
+
+追加可能な機能のリスト（実施順は固定しません）は [docs/future-features.md](docs/future-features.md) を参照してください。
