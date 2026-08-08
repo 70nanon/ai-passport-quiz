@@ -1,20 +1,23 @@
 /**
- * Google Apps Script: 問題シート（複数行1問）→ normalized（1行1問）
+ * Google Apps Script: 複数ファイル・複数シートの問題を正規化し、別 CSV に保存する
  *
  * 使い方:
- * 1. 問題ファイルをまとめた Drive フォルダでスタンドアロンの GAS を開く
- *    （または script.google.com でこの内容を貼る）
- * 2. CONFIG.FOLDER_ID をそのフォルダ ID に変更する
- * 3. エディタで normalizeAllInFolder を選んで実行（初回は承認が必要）
+ * 1. 問題ファイルをまとめた Drive フォルダ用のスタンドアロン GAS にこの内容を貼る
+ * 2. CONFIG.FOLDER_ID を設定する
+ * 3. normalizeAllInFolder を実行（初回は Drive / Spreadsheet の承認が必要）
  *
  * 入力レイアウト（実 CSV より）:
  *   先頭行: A=番号, B=問題文, C=①選択肢, E=正解①〜④, F=正解1〜4
  *   続き行: C=②③④選択肢
  *
- * 出力タブ normalized の列:
+ * 出力:
+ *   フォルダ内に CSV を新規作成／同名があれば更新
+ *   （元の問題シートには書き込まない）
+ *
+ * 列契約（sync-questions 向け）:
  *   id, category, question, choiceA, choiceB, choiceC, choiceD, answer(0-based), explanation
  *
- * 注意: このファイルはリポジトリ保管用。Node では実行しない（Apps Script にコピーして使う）。
+ * 注意: リポジトリ保管用。Node では実行しない。
  */
 
 const CONFIG = {
@@ -24,25 +27,41 @@ const CONFIG = {
   /** ファイル名に含まれる文字。空文字ならフォルダ内の全スプレッドシート */
   FILE_NAME_INCLUDES: '問題集',
 
-  /** 各ファイル内の入力タブ。空文字なら先頭シート */
-  SOURCE_SHEET_NAME: '',
+  /**
+   * スキップするタブ名（完全一致）
+   * 以前の実行でできた normalized など
+   */
+  SKIP_SHEET_NAMES: ['normalized'],
 
-  OUTPUT_SHEET: 'normalized',
+  /** 出力 CSV ファイル名（同じフォルダに保存） */
+  OUTPUT_CSV_NAME: 'questions-normalized.csv',
 
-  /** true: category / id 接頭辞にファイル名を使う */
-  CATEGORY_FROM_FILE_NAME: true,
-  ID_PREFIX_FROM_FILE: true,
-  CATEGORY_DEFAULT: '未分類',
-  ID_PREFIX_DEFAULT: 'q-',
+  /**
+   * true: 各スプレッドシート内にも normalized タブを書く（非推奨）
+   * false: 元ファイルには一切書かず、CSV のみ（推奨）
+   */
+  ALSO_WRITE_NORMALIZED_TAB: false,
 
-  /** 最低選択肢数（3択を許すなら 3） */
+  /** 最低選択肢数（3択を許す） */
   MIN_CHOICES: 3,
 
   COL: { A: 0, B: 1, C: 2, D: 3, E: 4, F: 5 },
 };
 
+const CSV_HEADER = [
+  'id',
+  'category',
+  'question',
+  'choiceA',
+  'choiceB',
+  'choiceC',
+  'choiceD',
+  'answer',
+  'explanation',
+];
+
 /**
- * フォルダ内の対象スプレッドシートを順に正規化する（スタンドアロン用の入口）
+ * フォルダ内の対象スプレッドシート × 全シートを正規化し、1つの CSV にまとめる
  */
 function normalizeAllInFolder() {
   if (!CONFIG.FOLDER_ID || CONFIG.FOLDER_ID === 'REPLACE_WITH_FOLDER_ID') {
@@ -51,109 +70,161 @@ function normalizeAllInFolder() {
 
   const folder = DriveApp.getFolderById(CONFIG.FOLDER_ID);
   const files = folder.getFilesByType(MimeType.GOOGLE_SHEETS);
+  const allRows = [];
   const logs = [];
-  let done = 0;
+  let globalSeq = 0;
+  let fileCount = 0;
+  let sheetCount = 0;
 
   while (files.hasNext()) {
     const file = files.next();
-    const name = file.getName();
+    const fileName = file.getName();
     if (
       CONFIG.FILE_NAME_INCLUDES &&
-      name.indexOf(CONFIG.FILE_NAME_INCLUDES) === -1
+      fileName.indexOf(CONFIG.FILE_NAME_INCLUDES) === -1
     ) {
       continue;
     }
 
+    if (fileName === CONFIG.OUTPUT_CSV_NAME) continue;
+
     const ss = SpreadsheetApp.openById(file.getId());
-    const count = normalizeOneSpreadsheet_(ss, name);
-    done += 1;
-    logs.push(name + ' → ' + count + '問');
-  }
+    const sheets = ss.getSheets();
+    let fileTotal = 0;
+    const fileRows = [];
 
-  const msg = '完了: ' + done + ' ファイル\n' + logs.join('\n');
-  Logger.log(msg);
-  try {
-    SpreadsheetApp.getUi().alert(msg);
-  } catch (e) {
-    // スタンドアロン実行では UI が使えないことがある
-  }
-}
+    for (let s = 0; s < sheets.length; s++) {
+      const sheet = sheets[s];
+      const sheetName = sheet.getName();
+      if (shouldSkipSheet_(sheetName)) continue;
 
-/**
- * 単一スプレッドシートを ID 指定で正規化（動作確認用）
- * エディタで SP_ID を書き換えてから実行する
- */
-function normalizeOneById() {
-  const SP_ID = 'REPLACE_WITH_SPREADSHEET_ID';
-  if (SP_ID === 'REPLACE_WITH_SPREADSHEET_ID') {
-    throw new Error('normalizeOneById: スプレッドシート ID を設定してください');
-  }
-  const ss = SpreadsheetApp.openById(SP_ID);
-  const count = normalizeOneSpreadsheet_(ss, ss.getName());
-  Logger.log('完了: ' + count + '問');
-}
+      const values = sheet.getDataRange().getValues();
+      if (!values || values.length < 2) continue;
 
-/**
- * 先頭20行をログ出力（列確認用）
- * normalizeOneById と同様に SP_ID をセットしてから実行
- */
-function dumpSample() {
-  const SP_ID = 'REPLACE_WITH_SPREADSHEET_ID';
-  if (SP_ID === 'REPLACE_WITH_SPREADSHEET_ID') {
-    throw new Error('dumpSample: スプレッドシート ID を設定してください');
-  }
-  const ss = SpreadsheetApp.openById(SP_ID);
-  const src = getSourceSheet_(ss);
-  const values = src.getDataRange().getValues();
-  const n = Math.min(20, values.length);
-  for (let i = 0; i < n; i++) {
-    Logger.log(
-      'row %s | A=%s | B=%s | C=%s | D=%s | E=%s | F=%s',
-      i + 1,
-      values[i][0],
-      values[i][1],
-      values[i][2],
-      values[i][3],
-      values[i][4],
-      values[i][5]
-    );
-  }
-}
+      let questions;
+      try {
+        questions = parseQuestions_(values);
+      } catch (err) {
+        logs.push(
+          '[skip parse] ' + fileName + ' / ' + sheetName + ': ' + err.message
+        );
+        continue;
+      }
 
-function normalizeOneSpreadsheet_(ss, fileName) {
-  const src = getSourceSheet_(ss);
-  const values = src.getDataRange().getValues();
-  const questions = parseQuestions_(values);
+      if (!questions.length) {
+        logs.push('[skip empty] ' + fileName + ' / ' + sheetName);
+        continue;
+      }
 
-  const category = CONFIG.CATEGORY_FROM_FILE_NAME
-    ? fileName
-    : CONFIG.CATEGORY_DEFAULT;
-  const idPrefix = CONFIG.ID_PREFIX_FROM_FILE
-    ? slugPrefix_(fileName)
-    : CONFIG.ID_PREFIX_DEFAULT;
+      const category = fileName + ' / ' + sheetName;
+      const idPrefix = slugPrefix_(fileName + '-' + sheetName);
 
-  const outRows = questions.map(function (q, idx) {
-    return questionToRow_(q, idx + 1, category, idPrefix);
-  });
+      for (let i = 0; i < questions.length; i++) {
+        globalSeq += 1;
+        try {
+          const row = questionToRow_(
+            questions[i],
+            globalSeq,
+            category,
+            idPrefix
+          );
+          allRows.push(row);
+          fileRows.push(row);
+          fileTotal += 1;
+        } catch (err) {
+          logs.push(
+            '[skip q] ' +
+              fileName +
+              ' / ' +
+              sheetName +
+              ' #' +
+              questions[i].sheetNo +
+              ': ' +
+              err.message
+          );
+        }
+      }
 
-  writeNormalized_(ss, outRows);
-  return outRows.length;
-}
-
-function getSourceSheet_(ss) {
-  if (CONFIG.SOURCE_SHEET_NAME) {
-    const named = ss.getSheetByName(CONFIG.SOURCE_SHEET_NAME);
-    if (!named) {
-      throw new Error(
-        '入力タブが見つかりません: ' +
-          CONFIG.SOURCE_SHEET_NAME +
-          ' / file=' +
-          ss.getName()
+      sheetCount += 1;
+      logs.push(
+        fileName + ' / ' + sheetName + ' → ' + questions.length + '問候補'
       );
     }
-    return named;
+
+    if (CONFIG.ALSO_WRITE_NORMALIZED_TAB && fileRows.length) {
+      writeNormalizedTab_(ss, fileRows);
+    }
+
+    if (fileTotal > 0) fileCount += 1;
   }
-  return ss.getSheets()[0];
+
+  const csvFile = writeCsvToFolder_(folder, CONFIG.OUTPUT_CSV_NAME, allRows);
+
+  const msg =
+    '完了: ファイル ' +
+    fileCount +
+    ' / シート ' +
+    sheetCount +
+    ' / 出力 ' +
+    allRows.length +
+    '問\nCSV: ' +
+    csvFile.getName() +
+    ' (id=' +
+    csvFile.getId() +
+    ')\n' +
+    logs.join('\n');
+  Logger.log(msg);
+  try {
+    SpreadsheetApp.getUi().alert(
+      '正規化完了: ' + allRows.length + '問 → ' + CONFIG.OUTPUT_CSV_NAME
+    );
+  } catch (e) {
+    // スタンドアロンでは UI 不可のことがある
+  }
+}
+
+/**
+ * 単一スプレッドシートの全シートを正規化し、同じフォルダに CSV を書く（確認用）
+ * SP_ID / FOLDER_ID をセットして実行
+ */
+function normalizeOneSpreadsheetToCsv() {
+  const SP_ID = 'REPLACE_WITH_SPREADSHEET_ID';
+  if (SP_ID === 'REPLACE_WITH_SPREADSHEET_ID') {
+    throw new Error('スプレッドシート ID を設定してください');
+  }
+  if (!CONFIG.FOLDER_ID || CONFIG.FOLDER_ID === 'REPLACE_WITH_FOLDER_ID') {
+    throw new Error('CONFIG.FOLDER_ID も設定してください（CSV の保存先）');
+  }
+
+  const ss = SpreadsheetApp.openById(SP_ID);
+  const folder = DriveApp.getFolderById(CONFIG.FOLDER_ID);
+  const fileName = ss.getName();
+  const sheets = ss.getSheets();
+  const allRows = [];
+  let seq = 0;
+
+  for (let s = 0; s < sheets.length; s++) {
+    const sheet = sheets[s];
+    if (shouldSkipSheet_(sheet.getName())) continue;
+    const questions = parseQuestions_(sheet.getDataRange().getValues());
+    const category = fileName + ' / ' + sheet.getName();
+    const idPrefix = slugPrefix_(fileName + '-' + sheet.getName());
+    for (let i = 0; i < questions.length; i++) {
+      seq += 1;
+      allRows.push(questionToRow_(questions[i], seq, category, idPrefix));
+    }
+  }
+
+  const csvFile = writeCsvToFolder_(folder, CONFIG.OUTPUT_CSV_NAME, allRows);
+  Logger.log('出力 ' + allRows.length + '問 → ' + csvFile.getId());
+}
+
+function shouldSkipSheet_(sheetName) {
+  const skip = CONFIG.SKIP_SHEET_NAMES || [];
+  for (let i = 0; i < skip.length; i++) {
+    if (sheetName === skip[i]) return true;
+  }
+  return false;
 }
 
 /**
@@ -180,7 +251,6 @@ function parseQuestions_(values) {
       continue;
     }
 
-    // 先頭行: A が数字
     if (isQuestionNumber_(a)) {
       if (current) results.push(current);
       current = {
@@ -193,13 +263,9 @@ function parseQuestions_(values) {
       continue;
     }
 
-    // 続きの選択肢は C 列（実 CSV 確認済み）
     if (!current) continue;
-    if (looksLikeChoice_(c) || c !== '') {
-      // ②③④が付いていない行もあるので、空でなければ候補にする
-      if (looksLikeChoice_(c) || current.choices.length > 0) {
-        current.choices.push(stripChoiceMark_(c));
-      }
+    if (looksLikeChoice_(c) || (c !== '' && current.choices.length > 0)) {
+      current.choices.push(stripChoiceMark_(c));
     }
   }
 
@@ -215,35 +281,18 @@ function questionToRow_(q, seq, category, idPrefix) {
   const filled = choices.filter(Boolean).length;
   if (filled < CONFIG.MIN_CHOICES) {
     throw new Error(
-      id +
-        ' (sheetNo=' +
-        q.sheetNo +
-        ') の選択肢が足りません: ' +
-        JSON.stringify(choices)
+      '選択肢不足 sheetNo=' + q.sheetNo + ' ' + JSON.stringify(choices)
     );
   }
 
-  let answer;
-  try {
-    answer = toAnswerIndex_(q.answerRaw);
-  } catch (err) {
-    throw new Error(
-      id +
-        ' (sheetNo=' +
-        q.sheetNo +
-        ') の正解が解釈できません: [' +
-        q.answerRaw +
-        '] ' +
-        err.message
-    );
-  }
-
+  const answer = toAnswerIndex_(q.answerRaw);
   if (answer < 0 || answer > 3 || !choices[answer]) {
     throw new Error(
-      id +
-        ' の answer=' +
+      'answer不一致 sheetNo=' +
+        q.sheetNo +
+        ' answer=' +
         answer +
-        ' が choices と合いません: ' +
+        ' ' +
         JSON.stringify(choices)
     );
   }
@@ -261,24 +310,40 @@ function questionToRow_(q, seq, category, idPrefix) {
   ];
 }
 
-function writeNormalized_(ss, dataRows) {
-  let out = ss.getSheetByName(CONFIG.OUTPUT_SHEET);
-  if (!out) out = ss.insertSheet(CONFIG.OUTPUT_SHEET);
+/** 元ファイルには書かず、フォルダ上の CSV を作成／更新する */
+function writeCsvToFolder_(folder, fileName, dataRows) {
+  const lines = [CSV_HEADER].concat(dataRows).map(function (cols) {
+    return cols.map(csvEscape_).join(',');
+  });
+  // Excel でも文字化けしにくいよう BOM 付き UTF-8
+  const content = '\uFEFF' + lines.join('\n');
 
+  const existing = folder.getFilesByName(fileName);
+  if (existing.hasNext()) {
+    const file = existing.next();
+    file.setContent(content);
+    // 同名が複数ある場合は先頭だけ更新
+    return file;
+  }
+
+  return folder.createFile(fileName, content, MimeType.CSV);
+}
+
+/** オプション: 各ブックに normalized タブも残す場合のみ */
+function writeNormalizedTab_(ss, dataRows) {
+  let out = ss.getSheetByName('normalized');
+  if (!out) out = ss.insertSheet('normalized');
   out.clearContents();
-  const header = [
-    'id',
-    'category',
-    'question',
-    'choiceA',
-    'choiceB',
-    'choiceC',
-    'choiceD',
-    'answer',
-    'explanation',
-  ];
-  const values = [header].concat(dataRows);
-  out.getRange(1, 1, values.length, header.length).setValues(values);
+  const values = [CSV_HEADER].concat(dataRows);
+  out.getRange(1, 1, values.length, CSV_HEADER.length).setValues(values);
+}
+
+function csvEscape_(value) {
+  const s = value === null || value === undefined ? '' : String(value);
+  if (/[",\n\r]/.test(s)) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
 }
 
 function cell_(row, index) {
@@ -303,7 +368,7 @@ function stripChoiceMark_(s) {
 
 function toAnswerIndex_(value) {
   const s = String(value).trim();
-  if (s === '') throw new Error('空です');
+  if (s === '') throw new Error('正解が空');
 
   const map = { '①': 0, '②': 1, '③': 2, '④': 3 };
   if (map[s] !== undefined) return map[s];
@@ -315,7 +380,7 @@ function toAnswerIndex_(value) {
   if (n >= 1 && n <= 4) return n - 1;
   if (n >= 0 && n <= 3 && String(n) === s) return n;
 
-  throw new Error('未対応の形式');
+  throw new Error('未対応の正解形式: ' + s);
 }
 
 function pad3_(n) {
@@ -327,6 +392,6 @@ function pad3_(n) {
 function slugPrefix_(name) {
   const cleaned = String(name)
     .replace(/\s+/g, '')
-    .replace(/[^\w\u3040-\u30ff\u3400-\u9fffー]/g, '');
-  return (cleaned.slice(0, 12) || 'q') + '-';
+    .replace(/[^\w\u3040-\u30ff\u3400-\u9fffー\-]/g, '');
+  return (cleaned.slice(0, 16) || 'q') + '-';
 }
