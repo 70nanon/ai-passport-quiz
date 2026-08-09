@@ -1,19 +1,8 @@
 import type { HistoryStore } from './historyStore'
+import { emptySummary, summarizeMap } from './summary'
 import type { AnswerHistoryMap, AnswerRecord, HistorySummary } from './types'
 
 const STORAGE_KEY = 'ai-passport-quiz:answer-history:v1'
-
-function emptySummary(): HistorySummary {
-  return { answeredCount: 0, correctCount: 0 }
-}
-
-function summarize(map: AnswerHistoryMap): HistorySummary {
-  const records = Object.values(map)
-  return {
-    answeredCount: records.length,
-    correctCount: records.filter((r) => r.correct).length,
-  }
-}
 
 function readMap(): AnswerHistoryMap {
   try {
@@ -59,9 +48,17 @@ export class LocalStorageHistoryStore implements HistoryStore {
 
   getSummary(): HistorySummary {
     try {
-      return summarize(readMap())
+      return summarizeMap(readMap())
     } catch {
       return emptySummary()
+    }
+  }
+
+  clear(): void {
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+    } catch {
+      // ignore
     }
   }
 }

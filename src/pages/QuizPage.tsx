@@ -33,6 +33,12 @@ export function QuizPage() {
   const [deviceSummary, setDeviceSummary] = useState<HistorySummary>(() =>
     historyStore.getSummary(),
   )
+  const [historyVersion, setHistoryVersion] = useState(0)
+
+  function refreshHistory() {
+    setDeviceSummary(historyStore.getSummary())
+    setHistoryVersion((v) => v + 1)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -99,7 +105,7 @@ export function QuizPage() {
 
   function handleNext() {
     if (currentIndex >= quizQuestions.length - 1) {
-      setDeviceSummary(historyStore.getSummary())
+      refreshHistory()
       setPhase('finished')
       return
     }
@@ -117,6 +123,7 @@ export function QuizPage() {
   }
 
   function handleChangeScope() {
+    refreshHistory()
     setPhase('select')
     setSelection(null)
     setQuizQuestions([])
@@ -124,6 +131,11 @@ export function QuizPage() {
     setSelectedIndex(null)
     setAnswered(false)
     setCorrectCount(0)
+  }
+
+  function handleClearHistory() {
+    historyStore.clear()
+    refreshHistory()
   }
 
   if (loading) {
@@ -141,9 +153,11 @@ export function QuizPage() {
   if (phase === 'select') {
     return (
       <StartPage
-        totalCount={allQuestions.length}
+        questions={allQuestions}
         chapters={chapters}
+        historyVersion={historyVersion}
         onStart={startQuiz}
+        onClearHistory={handleClearHistory}
       />
     )
   }

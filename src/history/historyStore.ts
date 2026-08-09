@@ -6,4 +6,5 @@ export interface HistoryStore {
   getRecord(questionId: string): AnswerRecord | null
   getAll(): AnswerHistoryMap
   getSummary(): HistorySummary
+  clear(): void
 }

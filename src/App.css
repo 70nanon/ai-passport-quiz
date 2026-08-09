@@ -274,13 +274,41 @@ button {
   background: var(--accent-soft);
 }
 
+.start-option-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
 .start-option-label {
   font-weight: 600;
+}
+
+.start-option-progress {
+  font-size: 0.9rem;
+  color: var(--muted);
 }
 
 .start-option-count {
   color: var(--muted);
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.start-clear-button {
+  align-self: center;
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.start-clear-button:hover {
+  color: var(--wrong);
 }
 
 .status-message,

@@ -9,3 +9,9 @@ export const historyStore: HistoryStore = new LocalStorageHistoryStore()
 
 export type { HistoryStore } from './historyStore'
 export type { AnswerRecord, AnswerHistoryMap, HistorySummary } from './types'
+export {
+  emptySummary,
+  summarizeMap,
+  summarizeQuestions,
+  formatProgress,
+} from './summary'
