@@ -52,7 +52,7 @@
 各問題ファイルに `normalized` を追記し、別 GAS で統合スプレッドシートへ集約する。
 
 - **関連**: [`scripts/gas-normalize-per-file.js`](../scripts/gas-normalize-per-file.js), [`scripts/gas-merge-normalized.js`](../scripts/gas-merge-normalized.js)
-- [x] 完了（PR 作成後にリンクを記入）
+- [x] 完了（PR: https://github.com/70nanon/ai-passport-quiz/pull/4）
 
 ### ビルド／CI で同期してからデプロイする
 
