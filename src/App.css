@@ -213,6 +213,76 @@ button {
   filter: brightness(1.05);
 }
 
+.secondary-button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.75rem 1.35rem;
+  background: #fff;
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondary-button:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.start-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.start-title {
+  margin: 0;
+  font-size: clamp(1.25rem, 3vw, 1.5rem);
+}
+
+.start-lead {
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+}
+
+.start-options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.start-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  text-align: left;
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.start-option:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.start-option-label {
+  font-weight: 600;
+}
+
+.start-option-count {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 .status-message,
 .summary {
   text-align: center;
@@ -228,9 +298,22 @@ button {
   font-size: 1.5rem;
 }
 
+.summary-scope {
+  margin: 0 0 0.35rem !important;
+  font-weight: 600;
+  color: var(--text) !important;
+}
+
 .summary p {
   margin: 0 0 1.25rem;
   color: var(--muted);
+}
+
+.summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
 }
 
 @media (max-width: 600px) {
