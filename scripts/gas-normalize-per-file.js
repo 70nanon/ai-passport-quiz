@@ -198,7 +198,8 @@ function appendNormalizedRows_(ss, rows) {
     }
   }
   const start = sheet.getLastRow() + 1;
-  sheet.getRange(start, 1, start + rows.length - 1, HEADER.length).setValues(rows);
+  // getRange(row, column, numRows, numColumns) — 第3・4引数は終端ではなく行数・列数
+  sheet.getRange(start, 1, rows.length, HEADER.length).setValues(rows);
 }
 
 function shouldSkipSheet_(sheetName) {
