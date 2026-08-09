@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { questionRepository } from '../data'
+import { filterByChapter, listChapters } from '../lib/chapter'
 import type { Question } from '../types/question'
 import { QuestionCard } from '../components/QuestionCard'
 import { ResultPanel } from '../components/ResultPanel'
+import { StartPage, type StartSelection } from './StartPage'
+
+type Phase = 'select' | 'quiz' | 'finished'
 
 function shuffle<T>(items: T[]): T[] {
   const next = [...items]
@@ -14,14 +18,16 @@ function shuffle<T>(items: T[]): T[] {
 }
 
 export function QuizPage() {
-  const [questions, setQuestions] = useState<Question[]>([])
+  const [allQuestions, setAllQuestions] = useState<Question[]>([])
+  const [quizQuestions, setQuizQuestions] = useState<Question[]>([])
+  const [selection, setSelection] = useState<StartSelection | null>(null)
+  const [phase, setPhase] = useState<Phase>('select')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [answered, setAnswered] = useState(false)
   const [correctCount, setCorrectCount] = useState(0)
-  const [finished, setFinished] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -32,12 +38,10 @@ export function QuizPage() {
         setError(null)
         const data = await questionRepository.getQuestions()
         if (cancelled) return
-        setQuestions(shuffle(data))
-        setCurrentIndex(0)
-        setSelectedIndex(null)
-        setAnswered(false)
-        setCorrectCount(0)
-        setFinished(false)
+        setAllQuestions(data)
+        setPhase('select')
+        setSelection(null)
+        setQuizQuestions([])
       } catch (err) {
         if (cancelled) return
         setError(err instanceof Error ? err.message : '読み込みに失敗しました')
@@ -52,11 +56,26 @@ export function QuizPage() {
     }
   }, [])
 
-  const current = questions[currentIndex]
+  const chapters = useMemo(() => listChapters(allQuestions), [allQuestions])
+
+  const current = quizQuestions[currentIndex]
   const isCorrect = useMemo(() => {
     if (!current || selectedIndex === null) return false
     return selectedIndex === current.answer
   }, [current, selectedIndex])
+
+  function startQuiz(nextSelection: StartSelection) {
+    const scoped = filterByChapter(allQuestions, nextSelection.chapter)
+    if (scoped.length === 0) return
+
+    setSelection(nextSelection)
+    setQuizQuestions(shuffle(scoped))
+    setCurrentIndex(0)
+    setSelectedIndex(null)
+    setAnswered(false)
+    setCorrectCount(0)
+    setPhase('quiz')
+  }
 
   function handleSelect(index: number) {
     if (answered || !current) return
@@ -68,8 +87,8 @@ export function QuizPage() {
   }
 
   function handleNext() {
-    if (currentIndex >= questions.length - 1) {
-      setFinished(true)
+    if (currentIndex >= quizQuestions.length - 1) {
+      setPhase('finished')
       return
     }
     setCurrentIndex((i) => i + 1)
@@ -77,13 +96,22 @@ export function QuizPage() {
     setAnswered(false)
   }
 
-  function handleRestart() {
-    setQuestions((prev) => shuffle(prev))
+  function handleRestartSameScope() {
+    if (!selection) {
+      setPhase('select')
+      return
+    }
+    startQuiz(selection)
+  }
+
+  function handleChangeScope() {
+    setPhase('select')
+    setSelection(null)
+    setQuizQuestions([])
     setCurrentIndex(0)
     setSelectedIndex(null)
     setAnswered(false)
     setCorrectCount(0)
-    setFinished(false)
   }
 
   if (loading) {
@@ -94,20 +122,49 @@ export function QuizPage() {
     return <p className="status-message error">{error}</p>
   }
 
-  if (questions.length === 0) {
+  if (allQuestions.length === 0) {
     return <p className="status-message">問題がありません。</p>
   }
 
-  if (finished) {
+  if (phase === 'select') {
+    return (
+      <StartPage
+        totalCount={allQuestions.length}
+        chapters={chapters}
+        onStart={startQuiz}
+      />
+    )
+  }
+
+  if (phase === 'finished') {
+    const scopeLabel =
+      selection?.chapter === null || selection?.chapter === undefined
+        ? '全問題'
+        : selection.chapter
+
     return (
       <section className="summary">
         <h1>終了</h1>
+        <p className="summary-scope">{scopeLabel}</p>
         <p>
-          {questions.length} 問中 {correctCount} 問正解
+          {quizQuestions.length} 問中 {correctCount} 問正解
         </p>
-        <button type="button" className="primary-button" onClick={handleRestart}>
-          もう一度解く
-        </button>
+        <div className="summary-actions">
+          <button
+            type="button"
+            className="primary-button"
+            onClick={handleRestartSameScope}
+          >
+            もう一度解く
+          </button>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={handleChangeScope}
+          >
+            出題範囲を変える
+          </button>
+        </div>
       </section>
     )
   }
@@ -121,7 +178,7 @@ export function QuizPage() {
       <QuestionCard
         question={current}
         index={currentIndex}
-        total={questions.length}
+        total={quizQuestions.length}
         selectedIndex={selectedIndex}
         answered={answered}
         onSelect={handleSelect}
@@ -130,7 +187,7 @@ export function QuizPage() {
         <>
           <ResultPanel isCorrect={isCorrect} explanation={current.explanation} />
           <button type="button" className="primary-button" onClick={handleNext}>
-            {currentIndex >= questions.length - 1 ? '結果を見る' : '次の問題'}
+            {currentIndex >= quizQuestions.length - 1 ? '結果を見る' : '次の問題'}
           </button>
         </>
       ) : null}
