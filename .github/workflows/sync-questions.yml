@@ -1,0 +1,63 @@
+# 統合スプレッドシートの公開 CSV から questions.json を同期し、差分があれば PR を作る
+name: Sync questions
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sync-questions
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Require SHEETS_CSV_URL
+        env:
+          SHEETS_CSV_URL: ${{ vars.SHEETS_CSV_URL }}
+        run: |
+          if [ -z "$SHEETS_CSV_URL" ]; then
+            echo "Repository variable SHEETS_CSV_URL が未設定です。"
+            echo "Settings → Secrets and variables → Actions → Variables に公開 CSV の URL を追加してください。"
+            exit 1
+          fi
+
+      - name: Sync questions.json
+        env:
+          SHEETS_CSV_URL: ${{ vars.SHEETS_CSV_URL }}
+        run: npm run sync:questions
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: Sync questions.json from spreadsheet
+          branch: chore/sync-questions
+          delete-branch: true
+          title: Sync questions.json from spreadsheet
+          body: |
+            ## Summary
+            - 統合スプレッドシートの公開 CSV から `public/data/questions.json` を再生成
+            - 手動トリガー（Sync questions workflow）による更新
+
+            ## Notes
+            - 差分がなければこの PR は作られません
+            - マージ後、既存の Deploy GitHub Pages が `main` への push で反映します
+          add-paths: |
+            public/data/questions.json
