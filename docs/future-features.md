@@ -47,6 +47,13 @@
 - **関連**: [`scripts/sync-questions.mjs`](../scripts/sync-questions.mjs)
 - [x] 完了（PR: https://github.com/70nanon/ai-passport-quiz/pull/2）
 
+### 2段 GAS（ファイル内 normalized 追記＋フォルダ統合）
+
+各問題ファイルに `normalized` を追記し、別 GAS で統合スプレッドシートへ集約する。
+
+- **関連**: [`scripts/gas-normalize-per-file.js`](../scripts/gas-normalize-per-file.js), [`scripts/gas-merge-normalized.js`](../scripts/gas-merge-normalized.js)
+- [x] 完了（PR: https://github.com/70nanon/ai-passport-quiz/pull/4）
+
 ### ビルド／CI で同期してからデプロイする
 
 GitHub Actions などで「同期 → ビルド → Pages デプロイ」を自動化する。

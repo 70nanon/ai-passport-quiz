@@ -34,8 +34,17 @@ SHEETS_CSV_URL="https://.../export?format=csv&gid=..." npm run sync:questions
 SHEETS_CSV_URL="./public/data/sample-questions-normalized.csv" npm run sync:questions
 ```
 
-CSV の列は `id, category, question, choiceA, choiceB, choiceC, choiceD, answer, explanation` を想定しています（GAS の出力と同じ）。  
-サンプルとして [`public/data/sample-questions-normalized.csv`](public/data/sample-questions-normalized.csv) と、同期結果の [`public/data/questions.json`](public/data/questions.json) を置いてあります。
+CSV の列は `id, category, question, choiceA, choiceB, choiceC, choiceD, answer, explanation` を想定しています。  
+サンプルとして [`public/data/sample-questions-normalized.csv`](public/data/sample-questions-normalized.csv) と [`public/data/questions.json`](public/data/questions.json) を置いてあります。
+
+### Google Apps Script（Drive 上の正規化）
+
+リポジトリの `scripts/` に、Apps Script へコピーして使うソースがあります。
+
+1. [`scripts/gas-normalize-per-file.js`](scripts/gas-normalize-per-file.js) … 各問題ファイルの元タブ → 同じファイルの `normalized` へ **新規だけ追記**
+2. [`scripts/gas-merge-normalized.js`](scripts/gas-merge-normalized.js) … 各ファイルの `normalized` を **1つの統合スプレッドシート** へ集約
+
+`normalized` の編集（解説・問題文の整形）は Gemini／人が行い、統合シートは公開・同期用のコピーとして使います。
 
 ### GitHub Actions で同期する
 
