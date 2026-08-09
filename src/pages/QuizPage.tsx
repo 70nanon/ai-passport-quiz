@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { questionRepository } from '../data'
+import { historyStore } from '../history'
+import type { HistorySummary } from '../history'
 import { filterByChapter, listChapters } from '../lib/chapter'
 import type { Question } from '../types/question'
 import { QuestionCard } from '../components/QuestionCard'
@@ -28,6 +30,9 @@ export function QuizPage() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [answered, setAnswered] = useState(false)
   const [correctCount, setCorrectCount] = useState(0)
+  const [deviceSummary, setDeviceSummary] = useState<HistorySummary>(() =>
+    historyStore.getSummary(),
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -81,13 +86,20 @@ export function QuizPage() {
     if (answered || !current) return
     setSelectedIndex(index)
     setAnswered(true)
-    if (index === current.answer) {
+    const correct = index === current.answer
+    if (correct) {
       setCorrectCount((count) => count + 1)
     }
+    historyStore.recordAnswer({
+      questionId: current.id,
+      correct,
+      selectedIndex: index,
+    })
   }
 
   function handleNext() {
     if (currentIndex >= quizQuestions.length - 1) {
+      setDeviceSummary(historyStore.getSummary())
       setPhase('finished')
       return
     }
@@ -148,6 +160,10 @@ export function QuizPage() {
         <p className="summary-scope">{scopeLabel}</p>
         <p>
           {quizQuestions.length} 問中 {correctCount} 問正解
+        </p>
+        <p className="summary-device">
+          この端末の累計: {deviceSummary.answeredCount} 問回答済み（最新が正解{' '}
+          {deviceSummary.correctCount} 問）
         </p>
         <div className="summary-actions">
           <button

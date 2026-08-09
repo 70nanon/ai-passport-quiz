@@ -309,6 +309,11 @@ button {
   color: var(--muted);
 }
 
+.summary-device {
+  margin-top: -0.5rem !important;
+  font-size: 0.95rem;
+}
+
 .summary-actions {
   display: flex;
   flex-wrap: wrap;
