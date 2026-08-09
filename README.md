@@ -37,6 +37,18 @@ SHEETS_CSV_URL="./public/data/sample-questions-normalized.csv" npm run sync:ques
 CSV の列は `id, category, question, choiceA, choiceB, choiceC, choiceD, answer, explanation` を想定しています（GAS の出力と同じ）。  
 サンプルとして [`public/data/sample-questions-normalized.csv`](public/data/sample-questions-normalized.csv) と、同期結果の [`public/data/questions.json`](public/data/questions.json) を置いてあります。
 
+### GitHub Actions で同期する
+
+統合スプレッドシートの公開 CSV から `questions.json` 更新 PR を作れます。
+
+1. リポジトリの **Settings → Secrets and variables → Actions → Variables** に `SHEETS_CSV_URL` を追加する  
+   （例: `https://docs.google.com/spreadsheets/d/<ID>/export?format=csv&gid=<タブgid>`）
+2. Actions の **Sync questions** を手動実行（`workflow_dispatch`）
+3. 差分があれば bot PR が開くので確認してマージする（マージ後に既存の Pages デプロイが走る）
+
+差分がない場合は PR は作られません。サンプル CSV はこの workflow では更新しません。  
+PR 作成には Actions の `GITHUB_TOKEN` に書き込み権限が必要です（Settings → Actions → General → Workflow permissions）。
+
 ## ビルド
 
 ```bash

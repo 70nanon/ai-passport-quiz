@@ -52,6 +52,7 @@
 GitHub Actions などで「同期 → ビルド → Pages デプロイ」を自動化する。
 
 - **前提**: 上記の同期スクリプト、Pages 公開
+- [x] 完了（PR: https://github.com/70nanon/ai-passport-quiz/pull/5）
 
 ### 実行時に公開シート／CSV を読みにいく
 
