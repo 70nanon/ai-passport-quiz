@@ -271,9 +271,15 @@ button {
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-.start-option:hover {
+.start-option:hover:not(:disabled) {
   border-color: var(--accent);
   background: var(--accent-soft);
+}
+
+.start-option:disabled,
+.start-option.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .start-option-main {
