@@ -99,7 +99,7 @@ GitHub Actions などで「同期 → ビルド → Pages デプロイ」を自�
 
 - **前提**: 学習履歴（localStorage）、`category` からの章分割
 - **メモ**: 一覧から解く機能は含めない
-- [x] 完了（PR 作成後にリンクを記入）
+- [x] 完了（PR: https://github.com/70nanon/ai-passport-quiz/pull/10）
 
 ### 学習履歴を端末に残す
 
