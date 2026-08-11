@@ -98,6 +98,7 @@ button {
   font-size: clamp(1.15rem, 2.5vw, 1.35rem);
   font-weight: 600;
   line-height: 1.55;
+  white-space: pre-wrap;
 }
 
 .choice-list {
@@ -162,6 +163,7 @@ button {
 
 .choice-text {
   flex: 1;
+  white-space: pre-wrap;
 }
 
 .result-panel {
