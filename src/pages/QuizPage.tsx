@@ -8,8 +8,9 @@ import type { Question } from '../types/question'
 import { QuestionCard } from '../components/QuestionCard'
 import { ResultPanel } from '../components/ResultPanel'
 import { StartPage, type StartSelection } from './StartPage'
+import { BrowsePage } from './BrowsePage'
 
-type Phase = 'select' | 'quiz' | 'finished'
+type Phase = 'select' | 'quiz' | 'finished' | 'browse'
 
 function shuffle<T>(items: T[]): T[] {
   const next = [...items]
@@ -166,6 +167,14 @@ export function QuizPage() {
     refreshHistory()
   }
 
+  function handleOpenBrowse() {
+    setPhase('browse')
+  }
+
+  function handleCloseBrowse() {
+    setPhase('select')
+  }
+
   if (loading) {
     return <p className="status-message">問題を読み込み中…</p>
   }
@@ -185,7 +194,19 @@ export function QuizPage() {
         chapters={chapters}
         historyVersion={historyVersion}
         onStart={startQuiz}
+        onBrowse={handleOpenBrowse}
         onClearHistory={handleClearHistory}
+      />
+    )
+  }
+
+  if (phase === 'browse') {
+    return (
+      <BrowsePage
+        questions={allQuestions}
+        chapters={chapters}
+        historyVersion={historyVersion}
+        onBack={handleCloseBrowse}
       />
     )
   }
