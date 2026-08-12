@@ -20,6 +20,7 @@ type StartPageProps = {
   chapters: ChapterOption[]
   historyVersion: number
   onStart: (selection: StartSelection) => void
+  onBrowse: () => void
   onClearHistory: () => void
 }
 
@@ -28,6 +29,7 @@ export function StartPage({
   chapters,
   historyVersion,
   onStart,
+  onBrowse,
   onClearHistory,
 }: StartPageProps) {
   const historyMap = useMemo(() => {
@@ -78,6 +80,10 @@ export function StartPage({
       <p className="start-lead">
         全問題、章ごと、またはこの端末で間違えた問題だけを練習できます。進捗はこの端末に保存されます。
       </p>
+
+      <button type="button" className="start-browse-button" onClick={onBrowse}>
+        問題一覧を見る
+      </button>
 
       <ul className="start-options">
         <li>
