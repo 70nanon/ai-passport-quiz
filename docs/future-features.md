@@ -4,7 +4,7 @@
 「前提」がある項目は、先にそちらの土台があると実装が楽です。
 
 **完了したとき:** 本文は書き換えず、当該トピックに完了チェックまたは PR リンクだけ追記する。  
-例: `- [x] 完了（PR: https://github.com/70nanon/ai-passport-quiz/pull/1）` または `完了: #1`
+例: `- [x] 完了: #1` または `完了: #1`
 
 ## いまあるもの（MVP）
 
@@ -23,8 +23,8 @@
 静的ビルド（`npm run build`）を Pages で配信する。
 
 - **前提**: 特になし（`base: './'` は設定済み）
-- **メモ**: リポジトリは作成済み（`70nanon/ai-passport-quiz`）
-- [x] 完了（PR: https://github.com/70nanon/ai-passport-quiz/pull/1）
+- **メモ**: リポジトリは作成済み
+- [x] 完了: #1
 
 ### 本番の問題データを投入する
 
@@ -33,7 +33,7 @@
 - **前提**: シート列をアプリのスキーマに対応させる  
   （`id` / `category` / `question` / 選択肢 / `answer` / `explanation`）
 - **メモ**: UI 変更なしでデータ差し替えだけでよい
-- [x] 完了（PR: https://github.com/70nanon/ai-passport-quiz/pull/2）
+- [x] 完了: #2
 
 ---
 
@@ -45,21 +45,21 @@
 
 - **前提**: シートの列定義が固まっていること、取得手段（公開 CSV URL など）が決まっていること
 - **関連**: [`scripts/sync-questions.mjs`](../scripts/sync-questions.mjs)
-- [x] 完了（PR: https://github.com/70nanon/ai-passport-quiz/pull/2）
+- [x] 完了: #2
 
 ### 2段 GAS（ファイル内 normalized 追記＋フォルダ統合）
 
 各問題ファイルに `normalized` を追記し、別 GAS で統合スプレッドシートへ集約する。
 
 - **関連**: [`scripts/gas-normalize-per-file.js`](../scripts/gas-normalize-per-file.js), [`scripts/gas-merge-normalized.js`](../scripts/gas-merge-normalized.js)
-- [x] 完了（PR: https://github.com/70nanon/ai-passport-quiz/pull/4）
+- [x] 完了: #4
 
 ### ビルド／CI で同期してからデプロイする
 
 GitHub Actions などで「同期 → ビルド → Pages デプロイ」を自動化する。
 
 - **前提**: 上記の同期スクリプト、Pages 公開
-- [x] 完了（PR: https://github.com/70nanon/ai-passport-quiz/pull/5）
+- [x] 完了: #5
 
 ### 実行時に公開シート／CSV を読みにいく
 
@@ -84,14 +84,14 @@ GitHub Actions などで「同期 → ビルド → Pages デプロイ」を自�
 `category` を使ったフィルタやモード選択。
 
 - **前提**: 問題データに `category` が入っていること（スキーマには既にある）
-- [x] 完了（PR: https://github.com/70nanon/ai-passport-quiz/pull/3）
+- [x] 完了: #3
 
 ### 苦手分野・間違えた問題の復習
 
 不正解だった問題や分野をあとで優先して出す。
 
 - **前提**: 安定した `id`（スキーマに既にある）、回答結果の保存（下記「学習履歴」）
-- [x] 完了（PR: https://github.com/70nanon/ai-passport-quiz/pull/9）
+- [x] 完了: #9
 
 ### 章ごとの問題一覧と履歴表示
 
@@ -99,7 +99,7 @@ GitHub Actions などで「同期 → ビルド → Pages デプロイ」を自�
 
 - **前提**: 学習履歴（localStorage）、`category` からの章分割
 - **メモ**: 一覧から解く機能は含めない
-- [x] 完了（PR: https://github.com/70nanon/ai-passport-quiz/pull/10）
+- [x] 完了: #10
 
 ### 学習履歴を端末に残す
 
@@ -107,7 +107,7 @@ GitHub Actions などで「同期 → ビルド → Pages デプロイ」を自�
 
 - **前提**: 特になし（ログイン不要で始められる）
 - **メモ**: ブラウザや端末を変えると消える／共有されない
-- [x] 完了（PR: https://github.com/70nanon/ai-passport-quiz/pull/7）
+- [x] 完了: #7
 
 ### アカウント連携で履歴をクラウド保存する
 
